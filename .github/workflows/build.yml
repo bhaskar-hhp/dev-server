@@ -19,23 +19,25 @@ jobs:
           distribution: temurin
 
       - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-        with:
-          cmdline-tools-version: 11076708
-
-      - name: Install SDK components
         run: |
-          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager \
-            "platforms;android-34" \
-            "build-tools;34.0.0" 2>&1 | tail -5
+          # The runner already has cmdline-tools at /usr/local/lib/android/sdk
+          ANDROID_HOME=/usr/local/lib/android/sdk
+          echo "ANDROID_HOME=$ANDROID_HOME" >> $GITHUB_ENV
+          echo "ANDROID_SDK_ROOT=$ANDROID_HOME" >> $GITHUB_ENV
+          
+          SDKMANAGER=$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager
+          
+          # Accept all licenses
+          yes | $SDKMANAGER --licenses 2>&1 | tail -3
+          
+          # Install only what we need (skip emulator)
+          yes | $SDKMANAGER "platforms;android-34" "build-tools;34.0.0" 2>&1 | tail -5
 
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
       - name: Build with Gradle
         run: ./gradlew assembleRelease
-        env:
-          ANDROID_HOME: ${{ env.ANDROID_HOME }}
 
       - name: Locate APK
         id: locate
